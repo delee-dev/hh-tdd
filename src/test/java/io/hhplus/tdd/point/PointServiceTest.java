@@ -1,5 +1,6 @@
 package io.hhplus.tdd.point;
 
+import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -8,6 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -18,6 +23,8 @@ class PointServiceTest {
     private PointService pointService;
     @Mock
     private UserPointTable userPointTable;
+    @Mock
+    private PointHistoryTable pointHistoryTable;
 
     @Nested
     @DisplayName("포인트 조회")
@@ -69,4 +76,69 @@ class PointServiceTest {
             assertThat(actual.point()).isEqualTo(expected.point());
         }
     }
+
+    @Nested
+    @DisplayName("포인트 내역 조회")
+    class ReadPointHistoriesTest {
+        /**
+         * Test Case: 사용자가 포인트를 충전 및 사용한 내역이 있다면, 해당 내역을 반환해야 합니다.
+         * 작성 이유
+         *  - 반환된 포인트 내역이 정확히 일치하는지 확인합니다.
+         * */
+        @Test
+        @DisplayName("사용자가 포인트를 충전 및 사용한 내역이 있다면, 해당 내역을 반환해야 합니다.")
+        void getHistories_whenUserHasHistories_shouldReturnHistories() {
+            // given
+            long userId = 1L;
+
+            List<PointHistory> expected = new ArrayList<>();
+            PointHistory chargingHistory = new PointHistory(userId, 1L, 200, TransactionType.CHARGE, System.currentTimeMillis());
+            PointHistory usingHistory = new PointHistory(userId, 2L, 100, TransactionType.USE, System.currentTimeMillis());
+            expected.add(chargingHistory);
+            expected.add(usingHistory);
+
+            when(pointHistoryTable.selectAllByUserId(userId))
+                    .thenReturn(expected);
+
+            // when
+            List<PointHistory> actual = pointService.getHistories(userId);
+
+            //then
+            assertThat(actual)
+                    .as("시스템에 등록된 포인트 내역이 정확히 반환되어야 합니다.")
+                    .usingRecursiveComparison()
+                    .isEqualTo(expected);
+        }
+
+        /**
+         * Test Case: 사용자가 시스템에 포인트를 충전 및 사용한 내역이 없다면, 빈 리스트를 반환해야 합니다.
+         * 작성 이유
+         *  - null 을 반환하거나 예외를 발생시켜서는 안됩니다.
+         * */
+        @Test
+        @DisplayName("사용자가 시스템에 포인트를 충전 및 사용한 내역이 없다면, 빈 리스트를 반환해야 합니다.")
+        void getHistories_whenUserHasNoHistories_shouldReturnEmptyList() {
+            // given
+            long userId = 1L;
+            List<PointHistory> expected = Collections.emptyList();
+
+            when(pointHistoryTable.selectAllByUserId(userId))
+                    .thenReturn(expected);
+
+            // when & then
+            // 예외 검사
+            assertThatCode(() -> pointService.getHistories(userId))
+                    .as("충전 및 사용 내역이 없는 경우 빈 리스트가 반환되어야 합니다.")
+                    .doesNotThrowAnyException();
+
+            // 값 검사
+            List<PointHistory> actual = pointService.getHistories(userId);
+
+            assertThat(actual)
+                    .as("충전 및 사용 내역이 없는 경우 빈 리스트가 반환되어야 합니다.")
+                    .isNotNull()
+                    .isEmpty();
+        }
+    }
+
 }
