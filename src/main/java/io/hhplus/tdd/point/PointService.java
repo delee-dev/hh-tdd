@@ -31,6 +31,19 @@ public class PointService {
         return userPointTable.selectById(id);
     }
 
+    /**
+     * 포인트 내역 조회 함수
+     *
+     * 행동 분석
+     * 1. userId 값을 파라미터로 넘겨 받는다.
+     * 2. 포인트 내역 조회 API 를 호출한다.
+     * 3. 조회된 결과를 반환한다.
+     *
+     * Test Case
+     * 1. 성공
+     *  - 포인트 내역이 존재하는 경우, 해당 내역을 반환한다.
+     *  - 포인트 내역이 존재하지 않는 경우, 빈 리스트를 반환한다.
+     **/
     public List<PointHistory> getHistories(long userId) {
         return pointHistoryTable.selectAllByUserId(userId);
     }
