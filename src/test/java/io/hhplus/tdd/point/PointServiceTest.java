@@ -286,40 +286,33 @@ class PointServiceTest {
         }
 
         /**
-         * Test Case: 사용할 금액이 0보다 작거나 같으면 사용에 실패합니다.
+         * Test Case: 포인트 사용 정책 검증을 통과하지 못하면 사용에 실패합니다.
          * 작성 이유
-         *  - "사용할 금액은 0 보다 큰 값이어야 한다."는 정책을 만족하는지 확인합니다.
+         *  - PointValidator 에서 예외가 발생하는 경우, 포인트 사용이 실패하는지 검증합니다.
          * */
         @Test
-        void 사용할_금액이_0보다_작거나_같으면_사용에_실패한다() {
+        void 포인트_사용_검증을_통과하지_못하면_사용에_실패한다() {
             // given
             long id = 1L;
-            long amount = -100L;
+            long existingPoint = 200L;
+            long pointToUse = 300L;
 
-            // when & then
-            assertThatThrownBy(() -> pointService.use(id, new PointUseRequest(amount)))
-                    .isInstanceOf(RuntimeException.class);
-        }
+            UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
 
-        /**
-         * Test Case: 사용 금액이 충전된 금액을 초과하면 사용에 실패합니다.
-         * 작성 이유
-         *  - "충전된 금액보다 큰 금액을 사용할 수 없다."는 정책을 만족하는지 확인합니다.
-         * */
-        @Test
-        void 사용_금액이_충전된_금액을_초과하면_사용에_실패한다() {
-            // given
-            long id = 1L;
-            long currPoint = 200L;
-            long userAmount = 300L;
-
-            UserPoint userPoint = new UserPoint(id, currPoint, System.currentTimeMillis());
             when(userPointTable.selectById(id))
-                    .thenReturn(userPoint);
+                    .thenReturn(existingUserPoint);
+            doThrow(new IllegalArgumentException("Validation Fail"))
+                    .when(pointValidator)
+                    .validateForUse(anyLong(), anyLong());
 
-            // when & then
-            assertThatThrownBy(() -> pointService.use(id, new PointUseRequest(userAmount)))
-                    .isInstanceOf(RuntimeException.class);
+            // when
+            assertThatThrownBy(() -> pointService.use(id, new PointUseRequest(pointToUse)))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // then
+            verify(userPointTable, never())
+                    .insertOrUpdate(anyLong(), anyLong());
         }
+
     }
 }

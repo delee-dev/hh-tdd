@@ -116,11 +116,19 @@ public class PointService {
      *  - 사용 금액이 충전된 금액을 초과하면 실패한다.
      * */
     public UserPoint use(long id, PointUseRequest request) {
-        if (request.amount() <= 0) throw new RuntimeException("사용할 금액은 0보다 커야 합니다.");
-        UserPoint beforeUserPoint = userPointTable.selectById(id);
-        if (beforeUserPoint.point() - request.amount() < 0) throw new RuntimeException("충전된 금액보다 큰 금액은 사용할 수 없습니다.");
-        UserPoint result = userPointTable.insertOrUpdate(id, beforeUserPoint.point() - request.amount());
-        pointHistoryTable.insert(id, request.amount(), TransactionType.USE, result.updateMillis());
+        UserPoint existingUserPoint = userPointTable.selectById(id);
+
+        long beforePoint = existingUserPoint.point();
+        long pointToUse = request.amount();
+        long afterPoint = beforePoint - pointToUse;
+
+        // 정책 검증
+        pointValidator.validateForUse(beforePoint, pointToUse);
+        // 포인트 사용
+        UserPoint result = userPointTable.insertOrUpdate(id, afterPoint);
+        // 사용 내역 등록
+        pointHistoryTable.insert(id, pointToUse, TransactionType.USE, result.updateMillis());
+
         return result;
     }
 }
