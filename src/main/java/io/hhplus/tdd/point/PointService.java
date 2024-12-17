@@ -2,6 +2,7 @@ package io.hhplus.tdd.point;
 
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.point.request.PointChargeRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -71,7 +72,12 @@ public class PointService {
      *  - 파라미터로 받은 충전할 금액이 0보다 같거나 작으면 실패한다.
      *  - 충전 후 잔고가 최대 한도를 초과하면 실패한다.
      * */
-    public UserPoint charge(long id, long amount) {
-        return UserPoint.empty(id);
+    public UserPoint charge(long id, PointChargeRequest request) {
+        UserPoint existingUserPoint = userPointTable.selectById(id);
+        if (request.amount() <= 0) throw new RuntimeException("충전 금액은 0보다 큰 금액이어야 합니다.");
+        if (existingUserPoint.point() + request.amount() > 1_000_000) throw new RuntimeException("포인트 최대 한도를 초과했습니다. 최대 한도는 1,000,000 입니다.");
+        UserPoint result = userPointTable.insertOrUpdate(id, existingUserPoint.point() + request.amount());
+        pointHistoryTable.insert(id, request.amount(), TransactionType.CHARGE, result.updateMillis());
+        return result;
     }
 }
