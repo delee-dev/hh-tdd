@@ -2,6 +2,7 @@ package io.hhplus.tdd.point;
 
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.point.request.PointChargeRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -156,7 +157,7 @@ class PointServiceTest {
                     .thenReturn(updatedUserPoint);
 
             // when
-            UserPoint actual = pointService.charge(id, pointToCharge);
+            UserPoint actual = pointService.charge(id, new PointChargeRequest(pointToCharge));
 
             // then
             assertThat(actual.point())
@@ -184,7 +185,7 @@ class PointServiceTest {
                     .thenReturn(updatedUserPoint);
 
             // when
-            pointService.charge(id, pointToCharge);
+            pointService.charge(id, new PointChargeRequest(pointToCharge));
 
             // then
             verify(pointHistoryTable, times(1))
@@ -203,7 +204,7 @@ class PointServiceTest {
             long amount = -100L;
 
             // when & then
-            assertThatThrownBy(() -> pointService.charge(id, amount))
+            assertThatThrownBy(() -> pointService.charge(id, new PointChargeRequest(amount)))
                     .isInstanceOf(RuntimeException.class);
         }
 
@@ -224,7 +225,7 @@ class PointServiceTest {
                     .thenReturn(userPoint);
 
             // when & then
-            assertThatThrownBy(() -> pointService.charge(id, chargeAmount))
+            assertThatThrownBy(() -> pointService.charge(id, new PointChargeRequest(chargeAmount)))
                     .isInstanceOf(RuntimeException.class);
         }
     }
