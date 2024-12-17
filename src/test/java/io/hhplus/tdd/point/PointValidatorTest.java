@@ -51,4 +51,39 @@ class PointValidatorTest {
 
     }
 
+    @Nested
+    @DisplayName("포인트 사용 시 검증 테스트")
+    class ValidateForUseTest {
+        /**
+         * Test Case: 사용할 금액이 0보다 작거나 같으면 사용에 실패합니다.
+         * 작성 이유
+         *  - "사용할 금액은 0 보다 큰 값이어야 한다."는 정책을 만족하는지 확인합니다.
+         * */
+        @Test
+        void 사용할_금액이_0보다_작거나_같으면_사용에_실패한다() {
+            // given
+            long existingPoint = 100L;
+            long pointToUse = -100L;
+
+            // when & then
+            assertThatThrownBy(() -> pointValidator.validateForUse(existingPoint, pointToUse))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        /**
+         * Test Case: 사용 금액이 충전된 금액을 초과하면 사용에 실패합니다.
+         * 작성 이유
+         *  - "충전된 금액보다 큰 금액을 사용할 수 없다."는 정책을 만족하는지 확인합니다.
+         * */
+        @Test
+        void 사용_금액이_충전된_금액을_초과하면_사용에_실패한다() {
+            // given
+            long existingPoint = 200L;
+            long pointToUse = 300L;
+
+            // when & then
+            assertThatThrownBy(() -> pointValidator.validateForUse(existingPoint, pointToUse))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 }
