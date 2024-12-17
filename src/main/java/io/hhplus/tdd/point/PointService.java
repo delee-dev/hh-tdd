@@ -13,6 +13,7 @@ import java.util.List;
 public class PointService {
     private final UserPointTable userPointTable;
     private final PointHistoryTable pointHistoryTable;
+    private final PointValidator pointValidator;
 
 
     /**
@@ -69,15 +70,24 @@ public class PointService {
      *  - 충전 후 금액은 (충전 전 금액 + 충전 금액)과 일치한다.
      *  - 포인트 충전 내역이 추가된다.
      * 2. 실패
-     *  - 파라미터로 받은 충전할 금액이 0보다 같거나 작으면 실패한다.
-     *  - 충전 후 잔고가 최대 한도를 초과하면 실패한다.
+     *  - 파라미터로 받은 충전할 금액이 0보다 같거나 작으면 실패한다. (old, PointValidator 에서 테스트)
+     *  - 충전 후 잔고가 최대 한도를 초과하면 실패한다. (old, PointValidator 에서 테스트)
+     *  - 정책 검증에서 예외가 발생하면 포인트 충전에 실패한다. (new)
      * */
     public UserPoint charge(long id, PointChargeRequest request) {
         UserPoint existingUserPoint = userPointTable.selectById(id);
-        if (request.amount() <= 0) throw new RuntimeException("충전 금액은 0보다 큰 금액이어야 합니다.");
-        if (existingUserPoint.point() + request.amount() > 1_000_000) throw new RuntimeException("포인트 최대 한도를 초과했습니다. 최대 한도는 1,000,000 입니다.");
-        UserPoint result = userPointTable.insertOrUpdate(id, existingUserPoint.point() + request.amount());
-        pointHistoryTable.insert(id, request.amount(), TransactionType.CHARGE, result.updateMillis());
+
+        long beforePoint = existingUserPoint.point();
+        long pointToCharge = request.amount();
+        long afterPoint = beforePoint + pointToCharge;
+
+        // 정책 검증
+        pointValidator.validateForCharge(beforePoint, pointToCharge);
+        // 포인트 충전
+        UserPoint result = userPointTable.insertOrUpdate(id, afterPoint);
+        // 충전 내역 등록
+        pointHistoryTable.insert(id, pointToCharge, TransactionType.CHARGE, result.updateMillis());
+
         return result;
     }
 }
