@@ -3,6 +3,7 @@ package io.hhplus.tdd.point;
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
 import io.hhplus.tdd.point.request.PointChargeRequest;
+import io.hhplus.tdd.point.request.PointUseRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -221,6 +222,104 @@ class PointServiceTest {
             // then
             verify(userPointTable, never())
                     .insertOrUpdate(anyLong(), anyLong());
+        }
+    }
+
+    @Nested
+    @DisplayName("포인트 사용")
+    class UsePointTest {
+        /**
+         * Test Case: 사용 후 금액은 (사용 전 금액 - 사용 금액)과 일치해야 합니다.
+         * 작성 이유
+         *  - 포인트 사용 기능이 정확하게 동작하는지 검증합니다.
+         * */
+        @Test
+        void 사용_후_잔고는_사용_전_잔고에서_사용_금액을_뺀_값과_일치한다() {
+            // given
+            long id = 1L;
+            long existingPoint = 200L;
+            long pointToUse = 100L;
+            long expectedPoint = existingPoint - pointToUse;
+
+            UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
+            UserPoint updatedUserPoint = new UserPoint(id, expectedPoint, System.currentTimeMillis());
+
+            when(userPointTable.selectById(id))
+                    .thenReturn(existingUserPoint);
+            when(userPointTable.insertOrUpdate(id, expectedPoint))
+                    .thenReturn(updatedUserPoint);
+
+            // when
+            UserPoint actual = pointService.use(id, new PointUseRequest(pointToUse));
+
+            // then
+            assertThat(actual.point())
+                    .isEqualTo(expectedPoint);
+        }
+        /**
+         * Test Case: 사용 후에는 포인트 사용 내역이 추가되어야 합니다.
+         * 작성 이유:
+         *  - 포인트 사용 시, 사용 내역이 기록되는지 검증합니다.
+         * */
+        @Test
+        void 사용_후에는_포인트_사용_내역이_추가된다() {
+            // given
+            long id = 1L;
+            long existingPoint = 200L;
+            long pointToUse = 100L;
+            long expectedPoint = existingPoint - pointToUse;
+
+            UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
+            UserPoint updatedUserPoint = new UserPoint(id, expectedPoint, System.currentTimeMillis());
+
+            when(userPointTable.selectById(id))
+                    .thenReturn(existingUserPoint);
+            when(userPointTable.insertOrUpdate(id, expectedPoint))
+                    .thenReturn(updatedUserPoint);
+
+            // when
+            pointService.use(id, new PointUseRequest(pointToUse));
+
+            // then
+            verify(pointHistoryTable, times(1))
+                    .insert(eq(id), eq(pointToUse), eq(TransactionType.USE), eq(updatedUserPoint.updateMillis()));
+        }
+
+        /**
+         * Test Case: 사용할 금액이 0보다 작거나 같으면 사용에 실패합니다.
+         * 작성 이유
+         *  - "사용할 금액은 0 보다 큰 값이어야 한다."는 정책을 만족하는지 확인합니다.
+         * */
+        @Test
+        void 사용할_금액이_0보다_작거나_같으면_사용에_실패한다() {
+            // given
+            long id = 1L;
+            long amount = -100L;
+
+            // when & then
+            assertThatThrownBy(() -> pointService.use(id, new PointUseRequest(amount)))
+                    .isInstanceOf(RuntimeException.class);
+        }
+
+        /**
+         * Test Case: 사용 금액이 충전된 금액을 초과하면 사용에 실패합니다.
+         * 작성 이유
+         *  - "충전된 금액보다 큰 금액을 사용할 수 없다."는 정책을 만족하는지 확인합니다.
+         * */
+        @Test
+        void 사용_금액이_충전된_금액을_초과하면_사용에_실패한다() {
+            // given
+            long id = 1L;
+            long currPoint = 200L;
+            long userAmount = 300L;
+
+            UserPoint userPoint = new UserPoint(id, currPoint, System.currentTimeMillis());
+            when(userPointTable.selectById(id))
+                    .thenReturn(userPoint);
+
+            // when & then
+            assertThatThrownBy(() -> pointService.use(id, new PointUseRequest(userAmount)))
+                    .isInstanceOf(RuntimeException.class);
         }
     }
 }

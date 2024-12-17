@@ -3,6 +3,7 @@ package io.hhplus.tdd.point;
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
 import io.hhplus.tdd.point.request.PointChargeRequest;
+import io.hhplus.tdd.point.request.PointUseRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -89,5 +90,32 @@ public class PointService {
         pointHistoryTable.insert(id, pointToCharge, TransactionType.CHARGE, result.updateMillis());
 
         return result;
+    }
+
+    /**
+     * 포인트를 사용하는 함수
+     *
+     * 정책
+     * 1. 충전된 금액보다 큰 금액을 사용할 수 없다.
+     * 2. 사용할 금액은 0 보다 큰 값이어야 한다.
+     *
+     * 행동 분석
+     * 1. id 와 사용 예정 포인트를 파라미터로 넘겨받는다.
+     * 2. 사용할 포인트가 정책(2)을 준수하는지 검사한다.
+     * 3. 조회 API 로 기존 포인트를 조회한다.
+     * 4. 사용할 포인트가 정책(1)을 준수하는지 검사한다.
+     * 5. 사용 API 를 호출한다.
+     * 6. 사용 내역 추가 API 를 호출한다.
+     *
+     * Test Case
+     * 1. 성공
+     *  - 사용 후 금액은 (사용 전 금액 - 사용 금액)과 일치한다.
+     *  - 포인트 사용 내역이 추가된다.
+     * 2. 실패
+     *  - 파라미터로 받은 사용 금액이 0보다 작거나 같으면 실패한다.
+     *  - 사용 금액이 충전된 금액을 초과하면 실패한다.
+     * */
+    public UserPoint use(long id, PointUseRequest request) {
+        return UserPoint.empty(id);
     }
 }
