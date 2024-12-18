@@ -1,4 +1,4 @@
-package io.hhplus.tdd.point;
+package io.hhplus.tdd.point.service;
 
 import io.hhplus.tdd.point.entity.PointHistory;
 import io.hhplus.tdd.point.entity.type.TransactionType;
@@ -7,8 +7,6 @@ import io.hhplus.tdd.point.dto.PointChargeRequest;
 import io.hhplus.tdd.point.dto.PointUseRequest;
 import io.hhplus.tdd.point.repository.PointHistoryRepository;
 import io.hhplus.tdd.point.repository.UserPointRepository;
-import io.hhplus.tdd.point.service.PointService;
-import io.hhplus.tdd.point.service.PointValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
