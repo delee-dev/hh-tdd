@@ -1,12 +1,12 @@
 package io.hhplus.tdd.point.service;
 
-import io.hhplus.tdd.database.PointHistoryTable;
-import io.hhplus.tdd.database.UserPointTable;
-import io.hhplus.tdd.point.entity.PointHistory;
-import io.hhplus.tdd.point.entity.type.TransactionType;
-import io.hhplus.tdd.point.entity.UserPoint;
 import io.hhplus.tdd.point.dto.PointChargeRequest;
 import io.hhplus.tdd.point.dto.PointUseRequest;
+import io.hhplus.tdd.point.entity.PointHistory;
+import io.hhplus.tdd.point.entity.UserPoint;
+import io.hhplus.tdd.point.entity.type.TransactionType;
+import io.hhplus.tdd.point.repository.PointHistoryRepository;
+import io.hhplus.tdd.point.repository.UserPointRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +15,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 public class PointService {
-    private final UserPointTable userPointTable;
-    private final PointHistoryTable pointHistoryTable;
+    private final UserPointRepository userPointRepository;
+    private final PointHistoryRepository pointHistoryRepository;
     private final PointValidator pointValidator;
 
 
@@ -34,7 +34,7 @@ public class PointService {
      *  - 시스템에 포인트를 충전하지 않은 경우, 기본 값을 반환한다.
      **/
     public UserPoint getPoint(long id) {
-        return userPointTable.selectById(id);
+        return userPointRepository.selectById(id);
     }
 
     /**
@@ -51,7 +51,7 @@ public class PointService {
      *  - 포인트 내역이 존재하지 않는 경우, 빈 리스트를 반환한다.
      **/
     public List<PointHistory> getHistories(long userId) {
-        return pointHistoryTable.selectAllByUserId(userId);
+        return pointHistoryRepository.selectAllByUserId(userId);
     }
 
     /**
@@ -79,7 +79,7 @@ public class PointService {
      *  - 정책 검증에서 예외가 발생하면 포인트 충전에 실패한다. (new)
      * */
     public UserPoint charge(long id, PointChargeRequest request) {
-        UserPoint existingUserPoint = userPointTable.selectById(id);
+        UserPoint existingUserPoint = userPointRepository.selectById(id);
 
         long beforePoint = existingUserPoint.point();
         long pointToCharge = request.amount();
@@ -88,9 +88,9 @@ public class PointService {
         // 정책 검증
         pointValidator.validateForCharge(beforePoint, pointToCharge);
         // 포인트 충전
-        UserPoint result = userPointTable.insertOrUpdate(id, afterPoint);
+        UserPoint result = userPointRepository.insertOrUpdate(id, afterPoint);
         // 충전 내역 등록
-        pointHistoryTable.insert(id, pointToCharge, TransactionType.CHARGE, result.updateMillis());
+        pointHistoryRepository.insert(id, pointToCharge, TransactionType.CHARGE, result.updateMillis());
 
         return result;
     }
@@ -119,7 +119,7 @@ public class PointService {
      *  - 사용 금액이 충전된 금액을 초과하면 실패한다.
      * */
     public UserPoint use(long id, PointUseRequest request) {
-        UserPoint existingUserPoint = userPointTable.selectById(id);
+        UserPoint existingUserPoint = userPointRepository.selectById(id);
 
         long beforePoint = existingUserPoint.point();
         long pointToUse = request.amount();
@@ -128,9 +128,9 @@ public class PointService {
         // 정책 검증
         pointValidator.validateForUse(beforePoint, pointToUse);
         // 포인트 사용
-        UserPoint result = userPointTable.insertOrUpdate(id, afterPoint);
+        UserPoint result = userPointRepository.insertOrUpdate(id, afterPoint);
         // 사용 내역 등록
-        pointHistoryTable.insert(id, pointToUse, TransactionType.USE, result.updateMillis());
+        pointHistoryRepository.insert(id, pointToUse, TransactionType.USE, result.updateMillis());
 
         return result;
     }
