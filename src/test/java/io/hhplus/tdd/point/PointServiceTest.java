@@ -1,12 +1,12 @@
 package io.hhplus.tdd.point;
 
-import io.hhplus.tdd.database.PointHistoryTable;
-import io.hhplus.tdd.database.UserPointTable;
 import io.hhplus.tdd.point.entity.PointHistory;
 import io.hhplus.tdd.point.entity.type.TransactionType;
 import io.hhplus.tdd.point.entity.UserPoint;
 import io.hhplus.tdd.point.dto.PointChargeRequest;
 import io.hhplus.tdd.point.dto.PointUseRequest;
+import io.hhplus.tdd.point.repository.PointHistoryRepository;
+import io.hhplus.tdd.point.repository.UserPointRepository;
 import io.hhplus.tdd.point.service.PointService;
 import io.hhplus.tdd.point.service.PointValidator;
 import org.junit.jupiter.api.DisplayName;
@@ -29,9 +29,9 @@ class PointServiceTest {
     @InjectMocks
     private PointService pointService;
     @Mock
-    private UserPointTable userPointTable;
+    private UserPointRepository userPointRepository;
     @Mock
-    private PointHistoryTable pointHistoryTable;
+    private PointHistoryRepository pointHistoryRepository;
     @Mock
     private PointValidator pointValidator;
 
@@ -51,7 +51,7 @@ class PointServiceTest {
             long updateMillis = System.currentTimeMillis();
             UserPoint expected = new UserPoint(id, point, updateMillis);
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(expected);
 
             // when
@@ -74,7 +74,7 @@ class PointServiceTest {
             long id = 1L;
             UserPoint expected = UserPoint.empty(id);
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(expected);
 
             // when
@@ -105,7 +105,7 @@ class PointServiceTest {
             expected.add(chargingHistory);
             expected.add(usingHistory);
 
-            when(pointHistoryTable.selectAllByUserId(userId))
+            when(pointHistoryRepository.selectAllByUserId(userId))
                     .thenReturn(expected);
 
             // when
@@ -128,7 +128,7 @@ class PointServiceTest {
             long userId = 1L;
             List<PointHistory> expected = Collections.emptyList();
 
-            when(pointHistoryTable.selectAllByUserId(userId))
+            when(pointHistoryRepository.selectAllByUserId(userId))
                     .thenReturn(expected);
 
             // when
@@ -159,9 +159,9 @@ class PointServiceTest {
             UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
             UserPoint updatedUserPoint = new UserPoint(id, expectedPoint, System.currentTimeMillis());
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(existingUserPoint);
-            when(userPointTable.insertOrUpdate(id, expectedPoint))
+            when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
 
             // when
@@ -187,16 +187,16 @@ class PointServiceTest {
             UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
             UserPoint updatedUserPoint = new UserPoint(id, expectedPoint, System.currentTimeMillis());
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(existingUserPoint);
-            when(userPointTable.insertOrUpdate(id, expectedPoint))
+            when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
 
             // when
             pointService.charge(id, new PointChargeRequest(pointToCharge));
 
             // then
-            verify(pointHistoryTable, times(1))
+            verify(pointHistoryRepository, times(1))
                     .insert(eq(id), eq(pointToCharge), eq(TransactionType.CHARGE), eq(updatedUserPoint.updateMillis()));
         }
 
@@ -214,7 +214,7 @@ class PointServiceTest {
 
             UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(existingUserPoint);
             doThrow(new IllegalArgumentException("Validation Fail"))
                     .when(pointValidator)
@@ -225,7 +225,7 @@ class PointServiceTest {
                     .isInstanceOf(IllegalArgumentException.class);
 
             // then
-            verify(userPointTable, never())
+            verify(userPointRepository, never())
                     .insertOrUpdate(anyLong(), anyLong());
         }
     }
@@ -249,9 +249,9 @@ class PointServiceTest {
             UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
             UserPoint updatedUserPoint = new UserPoint(id, expectedPoint, System.currentTimeMillis());
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(existingUserPoint);
-            when(userPointTable.insertOrUpdate(id, expectedPoint))
+            when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
 
             // when
@@ -277,16 +277,16 @@ class PointServiceTest {
             UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
             UserPoint updatedUserPoint = new UserPoint(id, expectedPoint, System.currentTimeMillis());
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(existingUserPoint);
-            when(userPointTable.insertOrUpdate(id, expectedPoint))
+            when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
 
             // when
             pointService.use(id, new PointUseRequest(pointToUse));
 
             // then
-            verify(pointHistoryTable, times(1))
+            verify(pointHistoryRepository, times(1))
                     .insert(eq(id), eq(pointToUse), eq(TransactionType.USE), eq(updatedUserPoint.updateMillis()));
         }
 
@@ -304,7 +304,7 @@ class PointServiceTest {
 
             UserPoint existingUserPoint = new UserPoint(id, existingPoint, System.currentTimeMillis());
 
-            when(userPointTable.selectById(id))
+            when(userPointRepository.selectById(id))
                     .thenReturn(existingUserPoint);
             doThrow(new IllegalArgumentException("Validation Fail"))
                     .when(pointValidator)
@@ -315,7 +315,7 @@ class PointServiceTest {
                     .isInstanceOf(IllegalArgumentException.class);
 
             // then
-            verify(userPointTable, never())
+            verify(userPointRepository, never())
                     .insertOrUpdate(anyLong(), anyLong());
         }
 
