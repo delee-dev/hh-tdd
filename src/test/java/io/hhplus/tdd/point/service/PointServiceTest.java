@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -32,6 +33,8 @@ class PointServiceTest {
     private PointHistoryRepository pointHistoryRepository;
     @Mock
     private PointValidator pointValidator;
+    @Mock
+    private LockManager lockManager;
 
     @Nested
     @DisplayName("포인트 조회")
@@ -51,6 +54,8 @@ class PointServiceTest {
 
             when(userPointRepository.selectById(id))
                     .thenReturn(expected);
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             UserPoint actual = pointService.getPoint(id);
@@ -74,6 +79,8 @@ class PointServiceTest {
 
             when(userPointRepository.selectById(id))
                     .thenReturn(expected);
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             UserPoint actual = pointService.getPoint(id);
@@ -105,6 +112,8 @@ class PointServiceTest {
 
             when(pointHistoryRepository.selectAllByUserId(userId))
                     .thenReturn(expected);
+            when(lockManager.getLock(userId))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             List<PointHistory> actual = pointService.getHistories(userId);
@@ -128,6 +137,8 @@ class PointServiceTest {
 
             when(pointHistoryRepository.selectAllByUserId(userId))
                     .thenReturn(expected);
+            when(lockManager.getLock(userId))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             List<PointHistory> actual = pointService.getHistories(userId);
@@ -161,6 +172,8 @@ class PointServiceTest {
                     .thenReturn(existingUserPoint);
             when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             UserPoint actual = pointService.charge(id, new PointChargeRequest(pointToCharge));
@@ -189,6 +202,8 @@ class PointServiceTest {
                     .thenReturn(existingUserPoint);
             when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             pointService.charge(id, new PointChargeRequest(pointToCharge));
@@ -214,6 +229,8 @@ class PointServiceTest {
 
             when(userPointRepository.selectById(id))
                     .thenReturn(existingUserPoint);
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
             doThrow(new IllegalArgumentException("Validation Fail"))
                     .when(pointValidator)
                     .validateForCharge(anyLong(), anyLong());
@@ -251,6 +268,8 @@ class PointServiceTest {
                     .thenReturn(existingUserPoint);
             when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             UserPoint actual = pointService.use(id, new PointUseRequest(pointToUse));
@@ -279,6 +298,8 @@ class PointServiceTest {
                     .thenReturn(existingUserPoint);
             when(userPointRepository.insertOrUpdate(id, expectedPoint))
                     .thenReturn(updatedUserPoint);
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             pointService.use(id, new PointUseRequest(pointToUse));
@@ -307,6 +328,8 @@ class PointServiceTest {
             doThrow(new IllegalArgumentException("Validation Fail"))
                     .when(pointValidator)
                     .validateForUse(anyLong(), anyLong());
+            when(lockManager.getLock(id))
+                    .thenReturn(new ReentrantLock(true));
 
             // when
             assertThatThrownBy(() -> pointService.use(id, new PointUseRequest(pointToUse)))
